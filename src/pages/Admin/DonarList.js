@@ -1,17 +1,18 @@
 import React, { useEffect, useState } from "react";
-import Layout from "./../../components/shared/Layout/Layout";
+import Layout from "../../components/shared/Layout/Layout";
 import moment from "moment";
 import API from "../../services/API";
 
 const DonarList = () => {
   const [data, setData] = useState([]);
-  //find donar records
+
+  // GET Donor Records
   const getDonars = async () => {
     try {
-      const { data } = await API.get("/admin/donar-list");
-      //   console.log(data);
-      if (data?.success) {
-        setData(data?.donarData);
+      const res = await API.get("/admin/donar-list");
+
+      if (res.data.success) {
+        setData(res.data.donarData);
       }
     } catch (error) {
       console.log(error);
@@ -22,17 +23,23 @@ const DonarList = () => {
     getDonars();
   }, []);
 
-  //DELETE FUNCTION
-  const handelDelete = async (id) => {
+  // DELETE FUNCTION
+  const handleDelete = async (id) => {
     try {
-      let answer = window.prompt(
-        "Are You SUre Want To Delete This Donar",
-        "Sure"
+      const confirmDelete = window.confirm(
+        "Are you sure you want to delete this donor?"
       );
-      if (!answer) return;
-      const { data } = await API.delete(`/admin/delete-donar/${id}`);
-      alert(data?.message);
-      window.location.reload();
+
+      if (!confirmDelete) return;
+
+      const res = await API.delete(`/admin/delete-donar/${id}`);
+
+      if (res.data.success) {
+        alert(res.data.message);
+
+        // update list without reload
+        setData(data.filter((item) => item._id !== id));
+      }
     } catch (error) {
       console.log(error);
     }
@@ -40,35 +47,50 @@ const DonarList = () => {
 
   return (
     <Layout>
-      <table className="table ">
-        <thead>
-          <tr>
-            <th scope="col">Name</th>
-            <th scope="col">Email</th>
-            <th scope="col">Phone</th>
-            <th scope="col">Date</th>
-            <th scope="col">Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {data?.map((record) => (
-            <tr key={record._id}>
-              <td>{record.name || record.organisationName + " (ORG)"}</td>
-              <td>{record.email}</td>
-              <td>{record.phone}</td>
-              <td>{moment(record.createdAt).format("DD/MM/YYYY hh:mm A")}</td>
-              <td>
-                <button
-                  className="btn btn-danger"
-                  onClick={() => handelDelete(record._id)}
-                >
-                  Delete
-                </button>
-              </td>
+      <div className="container">
+        <h3 className="mb-3">Donor List</h3>
+
+        <table className="table table-bordered">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Phone</th>
+              <th>Date</th>
+              <th>Action</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+
+          <tbody>
+            {data?.map((record) => (
+              <tr key={record._id}>
+                <td>
+                  {record.name
+                    ? record.name
+                    : `${record.organisationName} (ORG)`}
+                </td>
+
+                <td>{record.email}</td>
+
+                <td>{record.phone}</td>
+
+                <td>
+                  {moment(record.createdAt).format("DD/MM/YYYY hh:mm A")}
+                </td>
+
+                <td>
+                  <button
+                    className="btn btn-danger"
+                    onClick={() => handleDelete(record._id)}
+                  >
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </Layout>
   );
 };
